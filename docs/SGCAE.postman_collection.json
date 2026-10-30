@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "SGCAE - Control de Acceso de Empleados",
+    "description": "Colección para verificar los casos de uso de la API. Ejecutar en orden: las peticiones guardan los identificadores en variables de colección.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "protocol", "value": "http" },
+    { "key": "url", "value": "localhost" },
+    { "key": "port", "value": "5000" },
+    { "key": "baseUrl", "value": "{{protocol}}://{{url}}:{{port}}/api" },
+    { "key": "employeeId", "value": "" },
+    { "key": "credentialId", "value": "" },
+    { "key": "credentialCode", "value": "" },
+    { "key": "accessPointId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Access Points",
+      "item": [
+        {
+          "name": "Get access points",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const data = pm.response.json().data;",
+            "if (data.length) pm.collectionVariables.set('accessPointId', data[0].id);"
+          ] } }],
+          "request": { "method": "GET", "url": "{{baseUrl}}/access-points?isEnabled=true" }
+        },
+        {
+          "name": "Create access point",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Área restringida - Archivo\",\n  \"type\": \"RestrictedArea\",\n  \"location\": \"Sede principal - segundo piso\"\n}" },
+            "url": "{{baseUrl}}/access-points"
+          }
+        },
+        {
+          "name": "Get access point by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/access-points/{{accessPointId}}" }
+        },
+        {
+          "name": "Disable access point",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/access-points/{{accessPointId}}/disable" }
+        },
+        {
+          "name": "Enable access point",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/access-points/{{accessPointId}}/enable" }
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Create employee",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('employeeId', pm.response.json().data);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"documentNumber\": \"1036123456\",\n  \"firstName\": \"Laura\",\n  \"lastName\": \"Gómez\",\n  \"email\": \"laura.gomez@logistica.com\",\n  \"position\": \"Analista de inventarios\",\n  \"department\": \"Bodega\"\n}" },
+            "url": "{{baseUrl}}/employees"
+          }
+        },
+        {
+          "name": "Get employees (paged)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees?pageNumber=1&pageSize=10&search=Laura&status=Active" }
+        },
+        {
+          "name": "Get employee by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees/{{employeeId}}" }
+        },
+        {
+          "name": "Update employee",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Laura María\",\n  \"lastName\": \"Gómez\",\n  \"email\": \"laura.gomez@logistica.com\",\n  \"position\": \"Coordinadora de inventarios\",\n  \"department\": \"Bodega\"\n}" },
+            "url": "{{baseUrl}}/employees/{{employeeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Credentials",
+      "item": [
+        {
+          "name": "Assign credential",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const data = pm.response.json().data;",
+            "pm.collectionVariables.set('credentialId', data.id);",
+            "pm.collectionVariables.set('credentialCode', data.code);"
+          ] } }],
+          "request": { "method": "POST", "url": "{{baseUrl}}/employees/{{employeeId}}/credentials" }
+        },
+        {
+          "name": "Get employee credentials",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees/{{employeeId}}/credentials" }
+        },
+        {
+          "name": "Get credential by id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/credentials/{{credentialId}}" }
+        },
+        {
+          "name": "Get credential by code",
+          "request": { "method": "GET", "url": "{{baseUrl}}/credentials/code/{{credentialCode}}" }
+        }
+      ]
+    },
+    {
+      "name": "Access Records",
+      "item": [
+        {
+          "name": "Register entry (authorized)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Authorized', () => pm.expect(pm.response.json().data.result).to.eql('Authorized'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"credentialCode\": \"{{credentialCode}}\",\n  \"accessPointId\": \"{{accessPointId}}\",\n  \"movementType\": \"Entry\"\n}" },
+            "url": "{{baseUrl}}/access-records"
+          }
+        },
+        {
+          "name": "Register duplicated entry (rejected)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Rejected', () => pm.expect(pm.response.json().data.result).to.eql('Rejected'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"credentialCode\": \"{{credentialCode}}\",\n  \"accessPointId\": \"{{accessPointId}}\",\n  \"movementType\": \"Entry\"\n}" },
+            "url": "{{baseUrl}}/access-records"
+          }
+        },
+        {
+          "name": "Register exit (authorized)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"credentialCode\": \"{{credentialCode}}\",\n  \"accessPointId\": \"{{accessPointId}}\",\n  \"movementType\": \"Exit\"\n}" },
+            "url": "{{baseUrl}}/access-records"
+          }
+        },
+        {
+          "name": "Register unknown credential (rejected)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"credentialCode\": \"CRD-NOEXISTE\",\n  \"accessPointId\": \"{{accessPointId}}\",\n  \"movementType\": \"Entry\"\n}" },
+            "url": "{{baseUrl}}/access-records"
+          }
+        },
+        {
+          "name": "Get access history (paged)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/access-records?pageNumber=1&pageSize=10&employeeId={{employeeId}}" }
+        },
+        {
+          "name": "Get rejected accesses by access point and dates",
+          "request": { "method": "GET", "url": "{{baseUrl}}/access-records?accessPointId={{accessPointId}}&result=Rejected&from=2026-01-01&to=2030-12-31" }
+        }
+      ]
+    },
+    {
+      "name": "Credential and employee lifecycle",
+      "item": [
+        {
+          "name": "Block credential",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Pérdida reportada por el empleado\"\n}" },
+            "url": "{{baseUrl}}/credentials/{{credentialId}}/block"
+          }
+        },
+        {
+          "name": "Register entry with blocked credential (rejected)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"credentialCode\": \"{{credentialCode}}\",\n  \"accessPointId\": \"{{accessPointId}}\",\n  \"movementType\": \"Entry\"\n}" },
+            "url": "{{baseUrl}}/access-records"
+          }
+        },
+        {
+          "name": "Unblock credential",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/credentials/{{credentialId}}/unblock" }
+        },
+        {
+          "name": "Deactivate employee",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/employees/{{employeeId}}/deactivate" }
+        },
+        {
+          "name": "Register entry of inactive employee (rejected)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"credentialCode\": \"{{credentialCode}}\",\n  \"accessPointId\": \"{{accessPointId}}\",\n  \"movementType\": \"Entry\"\n}" },
+            "url": "{{baseUrl}}/access-records"
+          }
+        },
+        {
+          "name": "Revoke credential",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Retiro de la empresa\"\n}" },
+            "url": "{{baseUrl}}/credentials/{{credentialId}}/revoke"
+          }
+        }
+      ]
+    }
+  ]
+}
