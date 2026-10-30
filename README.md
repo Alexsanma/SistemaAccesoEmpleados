@@ -31,25 +31,27 @@ Dependencias: `Api → Application → Domain` y `Infrastructure → Application
 ## Requisitos
 
 - [.NET SDK 10](https://dotnet.microsoft.com/download)
-- Docker (para SQL Server) o una instancia propia de SQL Server
+- SQL Server instalado localmente (instancia por defecto con autenticación de Windows)
 
 ## Cómo ejecutar
 
-1. Levantar SQL Server:
+1. Revisar la cadena de conexión en `src/AccessControl.Api/appsettings.json`:
 
-   ```bash
-   docker compose up -d
+   ```json
+   "AccessControlConnection": "Server=localhost;Database=AccessControlDb;Trusted_Connection=True;TrustServerCertificate=True"
    ```
 
-2. Ejecutar la API (aplica las migraciones y crea los puntos de acceso iniciales automáticamente):
+   Si usas una instancia con nombre (por ejemplo `localhost\SQLEXPRESS`) o un usuario y contraseña de SQL Server, ajusta la cadena.
+
+2. Ejecutar la API. Al iniciar se crea la base de datos `AccessControlDb`, se aplican las migraciones y se registran los puntos de acceso iniciales:
 
    ```bash
    dotnet run --project src/AccessControl.Api --launch-profile https
    ```
 
-3. Abrir Swagger en <https://localhost:7000/swagger> (o en <http://localhost:5000/swagger> con el perfil `http`).
+   También se puede ejecutar desde Visual Studio con el perfil `https`.
 
-Para usar otra instancia de SQL Server, cambia `ConnectionStrings:AccessControlConnection` en `src/AccessControl.Api/appsettings.json`.
+3. Abrir Swagger en <https://localhost:7000/swagger> (o en <http://localhost:5000/swagger> con el perfil `http`).
 
 Para ejecutar las pruebas:
 
